@@ -189,3 +189,10 @@ def getUserProfile(sessionToken, userID):
     req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
     req.raise_for_status()
     return req.text
+
+def getContacts(sessionToken, type): # type = "Watchlist" or "Fotomeet" or "Mentee" or "Latest"
+    headers={"authorization": "Bearer "+sessionToken}
+    params = {"operationName":"GetContacts","variables":{"filter":{"type":type}},"query":"query GetContacts($filter: ContactListFilter) {\n  user {\n    contactList(filter: $filter) {\n      contacts {\n        ...ContactsUser\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment ContactsUser on User {\n  id\n  nick\n  profilePicture {\n    urlLargeSquare\n    __typename\n  }\n  isOnline\n  readMe\n  canReceiveMessages\n  __typename\n}\n"}
+    req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+    req.raise_for_status()
+    return req.text
