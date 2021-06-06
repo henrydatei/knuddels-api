@@ -1,5 +1,6 @@
 from knuddelsAPI import *
 from functions import *
+from classes import *
 import json
 
 username = "yourUsername"
