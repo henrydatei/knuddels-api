@@ -146,21 +146,24 @@ def getAllMessagesPerConversation(sessionToken, conversationID, beforeMessageID 
             t.italic = textBlock["text"]["italic"]
             m.formattedText = t
         except Exception as e:
-            # Multiple Messages
-            completeText = ""
-            completeBold = False
-            completeItalic = False
-            for item in textBlock["list"]["items"]:
-                try:
-                    completeText = completeText + " " + item["text"]["text"]
-                    completeBold = completeBold or item["text"]["bold"]
-                    completeItalic = completeItalic or item["text"]["italic"]
-                except Exception as e:
-                    pass
-            t = Text(completeText.replace("\n", "").strip())
-            t.bold = completeBold
-            t.italic = completeItalic
-            m.formattedText = t
+            try:
+                # Multiple Messages
+                completeText = ""
+                completeBold = False
+                completeItalic = False
+                for item in textBlock["list"]["items"]:
+                    try:
+                        completeText = completeText + " " + item["text"]["text"]
+                        completeBold = completeBold or item["text"]["bold"]
+                        completeItalic = completeItalic or item["text"]["italic"]
+                    except Exception as e:
+                        pass
+                t = Text(completeText.replace("\n", "").strip())
+                t.bold = completeBold
+                t.italic = completeItalic
+                m.formattedText = t
+            except Exception as e:
+                m.formattedText = Text("") 
         try:
             m.timestamp = message["timestamp"]
         except Exception as e:
@@ -176,9 +179,15 @@ def getAllMessagesPerConversation(sessionToken, conversationID, beforeMessageID 
         messages.append(m)
     hasMore = data["data"]["messenger"]["conversation"]["messages"]["hasMore"]
     if hasMore:
-        id = data["data"]["messenger"]["conversations"]["messages"]["messages"][0]["id"]
-        print("found more chats " + str(id))
-        moreMessages = getAllMessagesPerConversation(sessionToken, conversationID, id)
+        try:
+            id = data["data"]["messenger"]["conversations"]["messages"]["messages"][0]["id"]
+            print("found more chats " + str(id))
+            moreMessages = getAllMessagesPerConversation(sessionToken, conversationID, id)
+        except Exception as e:
+            moreMessages = []
         messages.extend(moreMessages)
 
     return messages
+
+def backupProgress(currentPerson, maxPerson, maxMessage):
+    print("Personen: {}/{}, Nachrichten der aktuellen Person: {}".format(currentPerson, maxPerson, maxMessage), end = "\r", flush = True)

@@ -1,47 +1,47 @@
 class Person():
     id = None
-    nick = None
-    isOnline = None
-    canSendImages = None
-    age = None
-    albumPhotosUrl = None
-    canReceiveMessages = None
-    city = None
-    distance = None
-    gender = None
-    ignoreState = None
-    isIgnoring = None
-    profilePicture = None
-    readMe = None
-    relationshipStatus = None
-    sexualOrientation = None
-    onlineMinutes = None
-    isAppBot = None
-    isLockedByAutomaticComplaint = None
-    automaticComplaintCommand = None
-    isReportable = None
-    conversationID = None
+    nick = ""
+    isOnline = ""
+    canSendImages = ""
+    age = ""
+    albumPhotosUrl = ""
+    canReceiveMessages = ""
+    city = ""
+    distance = ""
+    gender = ""
+    ignoreState = ""
+    isIgnoring = ""
+    profilePicture = ""
+    readMe = ""
+    relationshipStatus = ""
+    sexualOrientation = ""
+    onlineMinutes = ""
+    isAppBot = ""
+    isLockedByAutomaticComplaint = ""
+    automaticComplaintCommand = ""
+    isReportable = ""
+    conversationID = ""
 
     def __init__ (self, id):
         self.id = id
 
 class Text():
     text = None
-    bold = None
-    italic = None
-    underline = None
+    bold = ""
+    italic = ""
+    underline = ""
 
     def __init__ (self, text):
         self.text = text
 
 class Message():
     id = None
-    senderID = None
-    starred = None
-    formattedText = None
-    timestamp = None
-    image = None
-    snap = None
+    senderID = ""
+    starred = ""
+    formattedText = ""
+    timestamp = ""
+    image = ""
+    snap = ""
 
     def __init__ (self, id):
         self.id = id
