@@ -125,3 +125,4 @@ dmypy.json
 chats/.DS_Store
 chats/
 chats-all
+.DS_Store
