@@ -45,7 +45,7 @@ def getCurrentUserNick(sessionToken):
 
 def UpdateLastSeen(sessionToken):
     headers={"authorization": "Bearer "+sessionToken}
-    params = {"operationName": "UpdateLastSeen", "variables": {"isPresent": true}, "query": "mutation UpdateLastSeen($isPresent: Boolean!) {\n  user {\n    updateLastSeenTimestamp(isPresent: $isPresent)\n    __typename\n  }\n}\n"}
+    params = {"operationName": "UpdateLastSeen", "variables": {"isPresent": True}, "query": "mutation UpdateLastSeen($isPresent: Boolean!) {\n  user {\n    updateLastSeenTimestamp(isPresent: $isPresent)\n    __typename\n  }\n}\n"}
     req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
     req.raise_for_status()
     return req.text
