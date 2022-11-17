@@ -3,8 +3,8 @@ from functions import *
 from classes import *
 import json
 
-username = "lea16w"
-password = "qwertzuiop"
+username = "username"
+password = "password"
 totalMessagesMale = 0
 totalChatsMale = 0
 totalMessagesFemale = 0
