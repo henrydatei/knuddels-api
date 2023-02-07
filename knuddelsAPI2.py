@@ -13,7 +13,7 @@ from classes.SmileyDetails import SmileyDetails
 from classes.Channel import Channel
 
 @dataclasses.dataclass
-class KnuddelAPI:
+class KnuddelsAPI:
     username: str
     password: str
     sessionToken: str = dataclasses.field(init = False)
