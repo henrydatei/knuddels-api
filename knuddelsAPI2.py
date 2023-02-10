@@ -2,7 +2,7 @@ import dataclasses
 import json
 import requests
 from dacite import from_dict
-from typing import List
+from typing import List, Tuple, Literal
 
 from classes.ClientSettings import ClientSettings
 from classes.User import User
@@ -11,6 +11,8 @@ from classes.FotomeetStatus import FotomeetStatus
 from classes.ProfileVisitors import ProfileVisitors
 from classes.SmileyDetails import SmileyDetails
 from classes.Channel import Channel
+from classes.ProfilePicture import ProfilePicture
+from classes.Conversation import Conversation
 
 @dataclasses.dataclass
 class KnuddelsAPI:
@@ -21,20 +23,20 @@ class KnuddelsAPI:
     def __post_init__(self) -> None:
         self.sessionToken = self.login(self.username, self.password)
 
-    def getDeviceToken(self, username, password) -> str:
+    def getDeviceToken(self, username: str, password: str) -> str:
         params = {"operationName": "CreateDeviceToken", "variables": {"username": username,"password": password}, "query": 'query CreateDeviceToken($username: String!, $password: String!) {\n  login {\n    createDeviceToken(username: $username, password: $password) {\n      result\n      token\n      __typename\n    }\n    __typename\n  }\n}\n'}
         req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params))
         req.raise_for_status()
         return req.json()
     
-    def getRefreshSessionToken(self, deviceToken) -> str:
+    def getRefreshSessionToken(self, deviceToken: str) -> str:
         headers={"authorization": "Bearer "+deviceToken}
         params = {"operationName":"RefreshSessionToken","variables":{"sessionInfo":{"type":"K3GraphQl","clientVersion":{"major":4,"minor":22,"patch":8,"buildInfo":"dd34485a181477347adee04f166323c39d6db397"},"platform":"Native","osInfo":{"type":"Ios","version":"14.6"},"deviceIdentifiers":["E696701F-2098-4266-A040-B84FD740A6CF"]}},"query":"query RefreshSessionToken($sessionInfo: SessionInfo!, $oldSessionToken: SessionToken) {\n  login {\n    refreshSession(sessionInfo: $sessionInfo, token: $oldSessionToken) {\n      ... on RefreshSessionSuccess {\n        expiry\n        token\n        __typename\n      }\n      ...RefreshSessionError\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment RefreshSessionError on RefreshSessionError {\n  errorMessage\n  user {\n    ...UserWithLockInfo\n    __typename\n  }\n  __typename\n}\n\nfragment UserWithLockInfo on User {\n  id\n  nick\n  lockInfo {\n    ... on UnlockedLockInfo {\n      __typename\n    }\n    ... on TemporaryLockInfo {\n      lockReason\n      lockedBy {\n        id\n        nick\n        __typename\n      }\n      lockedUntilDate\n      __typename\n    }\n    ... on PermanentLockInfo {\n      lockReason\n      lockedBy {\n        id\n        nick\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n"}
         req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
         req.raise_for_status()
         return req.json()
 
-    def login(self, username, password) -> str:
+    def login(self, username: str, password: str) -> str:
         deviceToken = self.getDeviceToken(username,password)['data']['login']['createDeviceToken']['token']
         sessionToken = self.getRefreshSessionToken(deviceToken)['data']['login']['refreshSession']['token']
         return sessionToken
@@ -109,16 +111,70 @@ class KnuddelsAPI:
         req.raise_for_status()
         return [from_dict(data_class = Channel, data = channel) for channel in req.json()['data']['channel']['initialJoin']['channels']]
     
-    def getChannel(self, channelID) -> Channel:
+    def getChannel(self, channelID: str) -> Channel:
         headers={"authorization": "Bearer "+self.sessionToken}
         params = {"operationName": "GetChannel", "variables": {"channelId": channelID}, "query": "query GetChannel($channelId: ID!) {\n  channel {\n    channel(id: $channelId) {\n      ...ActiveChannel\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment ActiveChannel on Channel {\n  id\n  name\n  users {\n    ...ChannelUser\n    __typename\n  }\n  groupInfo {\n    backgroundColor {\n      ...Color\n      __typename\n    }\n    backgroundImageInfo {\n      mode\n      url\n      __typename\n    }\n    highlightColor {\n      ...Color\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment ChannelUser on User {\n  id\n  nick\n  age\n  gender\n  profilePicture {\n    urlLargeSquare\n    __typename\n  }\n  __typename\n}\n\nfragment Color on Color {\n  alpha\n  blue\n  green\n  red\n  __typename\n}\n"}
         req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
         req.raise_for_status()
         return from_dict(data_class = Channel, data = req.json()['data']['channel']['channel'])
     
-    def joinChannelById(self, channelID) -> Channel:
+    def joinChannelById(self, channelID: str) -> Channel:
         headers={"authorization": "Bearer "+self.sessionToken}
         params = {"operationName": "JoinChannelById", "variables": {"channelId": channelID}, "query": "mutation JoinChannelById($channelId: ID!) {\n  channel {\n    joinById(id: $channelId) {\n      channel {\n        ...ActiveChannel\n        __typename\n      }\n      error {\n        ...ChannelJoinError\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment ActiveChannel on Channel {\n  id\n  name\n  users {\n    ...ChannelUser\n    __typename\n  }\n  groupInfo {\n    backgroundColor {\n      ...Color\n      __typename\n    }\n    backgroundImageInfo {\n      mode\n      url\n      __typename\n    }\n    highlightColor {\n      ...Color\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment ChannelUser on User {\n  id\n  nick\n  age\n  gender\n  profilePicture {\n    urlLargeSquare\n    __typename\n  }\n  __typename\n}\n\nfragment Color on Color {\n  alpha\n  blue\n  green\n  red\n  __typename\n}\n\nfragment ChannelJoinError on ChannelJoinMutationResponseError {\n  type\n  freetext\n  userNick\n  otherChannelName\n  minAge\n  maxUser\n  startTime\n  endTime\n  minKnuddels\n  minTradeableSmileys\n  minRegisteredDays\n  minStammiMonths\n  requiredGender\n  requiredStatusName\n  __typename\n}\n"}
         req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
         req.raise_for_status()
         return from_dict(data_class = Channel, data = req.json()['data']['channel']['joinById']['channel'])
+    
+    def isUserOnline(self, userID: str) -> bool:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "UserIsOnline", "variables": {"id": userID}, "query": "query UserIsOnline($id: ID!) {\n  user {\n    user(id: $id) {\n      ...UserWithOnline\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment UserWithOnline on User {\n  id\n  isOnline\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return req.json()['data']['user']['user']['isOnline']
+    
+    def isUserOnlineAndLastChannel(self, userID: str) -> Tuple[bool, str]:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "UserIsOnlineInChannel", "variables": {"id": userID}, "query": "query UserIsOnlineInChannel($id: ID!) {\n  user {\n    user(id: $id) {\n      ...UserWithOnlineAndChannel\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment UserWithOnlineAndChannel on User {\n  id\n  isOnline\n  latestOnlineChannelName\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return (req.json()['data']['user']['user']['isOnline'], req.json()['data']['user']['user']['latestOnlineChannelName'])
+    
+    def notifyProfileVisited(self, userID: str) -> None:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "NotifyProfileVisited", "variables":{"userId": userID}, "query": "mutation NotifyProfileVisited($userId: ID!) {\n  user {\n    notifyProfileVisited(userId: $userId)\n    __typename\n  }\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+
+    def getProfilePictureUrls(self, userID: str) -> ProfilePicture:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "GetProfilePictureUrls", "variables": {"userId": userID}, "query": "query GetProfilePictureUrls($userId: ID!) {\n  user {\n    user(id: $userId) {\n      id\n      profilePicture {\n        urlLargeSquare\n        urlVeryLarge\n        exists\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return from_dict(data_class = ProfilePicture, data = req.json()['data']['user']['user']['profilePicture'])
+    
+    def getUserProfile(self, userID: str) -> Tuple[User, Conversation]:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "GetUserForProfile", "variables": {"userId": userID}, "query": "query GetUserForProfile($userId: ID!) {\n  user {\n    user(id: $userId) {\n      ...UserForProfile\n      __typename\n    }\n    __typename\n  }\n  messenger {\n    conversationWithParticipants(otherParticipantIds: [$userId]) {\n      id\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment UserForProfile on User {\n  id\n  nick\n  age\n  gender\n  sexualOrientation\n  relationshipStatus\n  city\n  distance\n  canReceiveMessages\n  profilePicture {\n    urlLargeSquare\n    urlVeryLarge\n    exists\n    __typename\n  }\n  albumPhotosUrl\n  readMe\n  name\n  dateOfBirth\n  country\n  children\n  smoker\n  hobbies\n  music\n  movies\n  series\n  books\n  languages\n  lastOnlineTime\n  dateOfRegistration\n  status\n  supportsKnuddelsPhilosophy\n  teams\n  stammiMonths\n  latestOnlineChannelName\n  myChannelName\n  moderatedChannelName\n  moderatedMyChannelNames\n  hickeys\n  flowers\n  roses\n  chatMeetups\n  receivedHearts\n  givenHeart\n  mentorPoints\n  onlineMinutes\n  isReportable\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return (from_dict(data_class = User, data = req.json()['data']['user']['user']), from_dict(data_class = Conversation, data = req.json()['data']['messenger']['conversationWithParticipants']))
+    
+    def getContacts(self, type: Literal["Watchlist", "Fotomeet", "Mentee", "Latest"]) -> List[User]:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName":"GetContacts","variables":{"filter":{"type":type}},"query":"query GetContacts($filter: ContactListFilter) {\n  user {\n    contactList(filter: $filter) {\n      contacts {\n        ...ContactsUser\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment ContactsUser on User {\n  id\n  nick\n  profilePicture {\n    urlLargeSquare\n    __typename\n  }\n  isOnline\n  readMe\n  canReceiveMessages\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return [from_dict(data_class = User, data = user) for user in req.json()['data']['user']['contactList']['contacts']]
+    
+    def getConversations(self, beforeTimestamp = None) -> List[Conversation]:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "MessengerOverview", "variables": {"limit": 50,"before": beforeTimestamp}, "query": "query MessengerOverview($limit: Int = 20, $before: UtcTimestamp = null) {\n  messenger {\n    conversations(limit: $limit, before: $before) {\n      conversations {\n        ...FullConversationWithoutMessages\n        __typename\n      }\n      hasMore\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment FullConversationWithoutMessages on MessengerConversation {\n  id\n  isArchived\n  otherParticipants {\n    ...MessengerBasicUser\n    age\n    albumPhotosUrl\n    canReceiveMessages\n    city\n    distance\n    gender\n    id\n    ignoreState\n    isIgnoring\n    isOnline\n    nick\n    profilePicture {\n      urlLargeSquare\n      urlVeryLarge\n      __typename\n    }\n    readMe\n    relationshipStatus\n    sexualOrientation\n    onlineMinutes\n    __typename\n  }\n  readState {\n    markedAsUnread\n    unreadMessageCount\n    lastReadMessage {\n      id\n      __typename\n    }\n    __typename\n  }\n  latestMessage {\n    ...MessengerMessage\n    __typename\n  }\n  __typename\n}\n\nfragment MessengerBasicUser on User {\n  id\n  nick\n  isOnline\n  canSendImages\n  __typename\n}\n\nfragment MessengerMessage on MessengerMessage {\n  id\n  nestedMessage {\n    id\n    sender {\n      id\n      nick\n      __typename\n    }\n    formattedText\n    timestamp\n    type\n    image {\n      url\n      __typename\n    }\n    __typename\n  }\n  sender {\n    ...MessengerBasicUser\n    __typename\n  }\n  starred\n  formattedText\n  timestamp\n  image {\n    url\n    __typename\n  }\n  snap {\n    url\n    duration\n    decryptionKey\n    __typename\n  }\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        
+        conversations = [from_dict(data_class = Conversation, data = conversation) for conversation in req.json()['data']['messenger']['conversations']['conversations']]
+
+        if req.json()['data']['messenger']['conversations']['hasMore']:
+            conversations += self.getConversations(beforeTimestamp = conversations[0].latestMessage.timestamp)
+
+        return conversations
