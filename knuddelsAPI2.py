@@ -8,11 +8,13 @@ from classes.ClientSettings import ClientSettings
 from classes.User import User
 from classes.FotomeetMatch import FotomeetMatch
 from classes.FotomeetStatus import FotomeetStatus
+from classes.FotomeetVoteResponse import FotomeetVoteResponse
 from classes.ProfileVisitors import ProfileVisitors
 from classes.SmileyDetails import SmileyDetails
 from classes.Channel import Channel
 from classes.ProfilePicture import ProfilePicture
 from classes.Conversation import Conversation
+from classes.Message import Message
 
 @dataclasses.dataclass
 class KnuddelsAPI:
@@ -82,6 +84,13 @@ class KnuddelsAPI:
         req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
         req.raise_for_status()
         return from_dict(data_class = FotomeetStatus, data = req.json()['data']['fotomeet']['status'])
+    
+    def fotoMeetVote(self, userID: str, vote: Literal["YES", "NO"]) -> FotomeetVoteResponse:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "fotoMeetVote", "variables": {"id": userID, "vote": vote}, "query": "mutation fotoMeetVote($id: ID!, $vote: FotomeetVote!) {\n  fotomeet {\n    vote(id: $id, type: $vote) {\n      ...VoteResponse\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment VoteResponse on FotomeetVoteResponse {\n  error\n  newStatus {\n    ...FotomeetStatus\n    __typename\n  }\n  __typename\n}\n\nfragment FotomeetStatus on FotomeetStatus {\n  currentCandidate {\n    ...Candidate\n    __typename\n  }\n  prefetchImageUrls\n  votingUnavailableReason\n  isPremium\n  potentialMatchCount\n  __typename\n}\n\nfragment Candidate on FotomeetUser {\n  age\n  distance\n  gender\n  id\n  isPotentialMatch\n  userInfo {\n    id\n    nick\n    __typename\n  }\n  imageUrl\n  isReportable\n  hasAlbumPhotos\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return from_dict(data_class = FotomeetVoteResponse, data = req.json()['data']['fotomeet']['vote'])
     
     def isUserAdFree(self) -> bool:
         headers={"authorization": "Bearer "+self.sessionToken}
@@ -166,7 +175,7 @@ class KnuddelsAPI:
         req.raise_for_status()
         return [from_dict(data_class = User, data = user) for user in req.json()['data']['user']['contactList']['contacts']]
     
-    def getConversations(self, beforeTimestamp = None) -> List[Conversation]:
+    def getConversations(self, beforeTimestamp: str = None) -> List[Conversation]:
         headers={"authorization": "Bearer "+self.sessionToken}
         params = {"operationName": "MessengerOverview", "variables": {"limit": 50,"before": beforeTimestamp}, "query": "query MessengerOverview($limit: Int = 20, $before: UtcTimestamp = null) {\n  messenger {\n    conversations(limit: $limit, before: $before) {\n      conversations {\n        ...FullConversationWithoutMessages\n        __typename\n      }\n      hasMore\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment FullConversationWithoutMessages on MessengerConversation {\n  id\n  isArchived\n  otherParticipants {\n    ...MessengerBasicUser\n    age\n    albumPhotosUrl\n    canReceiveMessages\n    city\n    distance\n    gender\n    id\n    ignoreState\n    isIgnoring\n    isOnline\n    nick\n    profilePicture {\n      urlLargeSquare\n      urlVeryLarge\n      __typename\n    }\n    readMe\n    relationshipStatus\n    sexualOrientation\n    onlineMinutes\n    __typename\n  }\n  readState {\n    markedAsUnread\n    unreadMessageCount\n    lastReadMessage {\n      id\n      __typename\n    }\n    __typename\n  }\n  latestMessage {\n    ...MessengerMessage\n    __typename\n  }\n  __typename\n}\n\nfragment MessengerBasicUser on User {\n  id\n  nick\n  isOnline\n  canSendImages\n  __typename\n}\n\nfragment MessengerMessage on MessengerMessage {\n  id\n  nestedMessage {\n    id\n    sender {\n      id\n      nick\n      __typename\n    }\n    formattedText\n    timestamp\n    type\n    image {\n      url\n      __typename\n    }\n    __typename\n  }\n  sender {\n    ...MessengerBasicUser\n    __typename\n  }\n  starred\n  formattedText\n  timestamp\n  image {\n    url\n    __typename\n  }\n  snap {\n    url\n    duration\n    decryptionKey\n    __typename\n  }\n  __typename\n}\n"}
         req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
@@ -178,3 +187,41 @@ class KnuddelsAPI:
             conversations += self.getConversations(beforeTimestamp = conversations[0].latestMessage.timestamp)
 
         return conversations
+    
+    def getConversation(self, conversationID: str) -> Conversation:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "GetConversationWithoutMessages", "variables": {"id": conversationID}, "query": "query GetConversationWithoutMessages($id: ID!) {\n  messenger {\n    conversation(id: $id) {\n      ...FullConversationWithoutMessages\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment FullConversationWithoutMessages on MessengerConversation {\n  id\n  isArchived\n  otherParticipants {\n    ...MessengerBasicUser\n    age\n    albumPhotosUrl\n    canReceiveMessages\n    city\n    distance\n    gender\n    id\n    ignoreState\n    isIgnoring\n    isOnline\n    nick\n    profilePicture {\n      urlLargeSquare\n      urlVeryLarge\n      __typename\n    }\n    readMe\n    relationshipStatus\n    sexualOrientation\n    onlineMinutes\n    __typename\n  }\n  readState {\n    markedAsUnread\n    unreadMessageCount\n    lastReadMessage {\n      id\n      __typename\n    }\n    __typename\n  }\n  latestMessage {\n    ...MessengerMessage\n    __typename\n  }\n  __typename\n}\n\nfragment MessengerBasicUser on User {\n  id\n  nick\n  isOnline\n  canSendImages\n  __typename\n}\n\nfragment MessengerMessage on MessengerMessage {\n  id\n  nestedMessage {\n    id\n    sender {\n      id\n      nick\n      __typename\n    }\n    formattedText\n    timestamp\n    type\n    image {\n      url\n      __typename\n    }\n    __typename\n  }\n  sender {\n    ...MessengerBasicUser\n    __typename\n  }\n  starred\n  formattedText\n  timestamp\n  image {\n    url\n    __typename\n  }\n  snap {\n    url\n    duration\n    decryptionKey\n    __typename\n  }\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        return from_dict(data_class = Conversation, data = req.json()['data']['messenger']['conversation'])
+    
+    def getMessagesForConversation(self, conversationID: str, beforeMessageID: str = None, messageCount: int = 50) -> List[Message]:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "GetConversation", "variables": {"messageCount": messageCount,"beforeMessageId": beforeMessageID, "id": conversationID}, "query": "query GetConversation($id: ID!, $messageCount: Int = 50, $beforeMessageId: ID = null) {\n  messenger {\n    conversation(id: $id) {\n      ...FullConversation\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment FullConversation on MessengerConversation {\n  ...FullConversationWithoutMessages\n  messages(limit: $messageCount, beforeMessageId: $beforeMessageId) {\n    messages {\n      ...MessengerMessage\n      __typename\n    }\n    hasMore\n    __typename\n  }\n  __typename\n}\n\nfragment FullConversationWithoutMessages on MessengerConversation {\n  id\n  isArchived\n  otherParticipants {\n    ...MessengerBasicUser\n    age\n    albumPhotosUrl\n    canReceiveMessages\n    city\n    distance\n    gender\n    id\n    ignoreState\n    isIgnoring\n    isOnline\n    nick\n    profilePicture {\n      urlLargeSquare\n      urlVeryLarge\n      __typename\n    }\n    readMe\n    relationshipStatus\n    sexualOrientation\n    onlineMinutes\n    __typename\n  }\n  readState {\n    markedAsUnread\n    unreadMessageCount\n    lastReadMessage {\n      id\n      __typename\n    }\n    __typename\n  }\n  latestMessage {\n    ...MessengerMessage\n    __typename\n  }\n  __typename\n}\n\nfragment MessengerBasicUser on User {\n  id\n  nick\n  isOnline\n  canSendImages\n  __typename\n}\n\nfragment MessengerMessage on MessengerMessage {\n  id\n  nestedMessage {\n    id\n    sender {\n      id\n      nick\n      __typename\n    }\n    formattedText\n    timestamp\n    type\n    image {\n      url\n      __typename\n    }\n    __typename\n  }\n  sender {\n    ...MessengerBasicUser\n    __typename\n  }\n  starred\n  formattedText\n  timestamp\n  image {\n    url\n    __typename\n  }\n  snap {\n    url\n    duration\n    decryptionKey\n    __typename\n  }\n  __typename\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        
+        messages = [from_dict(data_class = Message, data = message) for message in req.json()['data']['messenger']['conversation']['messages']['messages']]
+        
+        if req.json()['data']['messenger']['conversation']['messages']['hasMore']:
+            messages += self.getMessagesForConversation(conversationID, beforeMessageID = messages[0].id, messageCount = messageCount)
+            
+        return messages
+    
+    def sendTyping(self, conversationID: str) -> None:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "SendTyping", "variables": {"id": conversationID}, "query": "mutation SendTyping($id: ID!) {\n  messenger {\n    notifyTyping(conversationId: $id) {\n      error\n      __typename\n    }\n    __typename\n  }\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        
+    def sendMessage(self, conversationID: str, message: str) -> None:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "MessengerSendMessage", "variables": {"id": conversationID,"text": message}, "query": "mutation MessengerSendMessage($id: ID!, $text: String!) {\n  messenger {\n    sendMessage(conversationId: $id, text: $text) {\n      error {\n        type\n        filterReason\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()
+        
+    def markConversationAsRead(self, conversationID: str) -> None:
+        headers={"authorization": "Bearer "+self.sessionToken}
+        params = {"operationName": "MessengerMarkConversationsAsRead", "variables": {"ids":[conversationID]}, "query": "mutation MessengerMarkConversationsAsRead($ids: [ID!]!) {\n  messenger {\n    readConversations(ids: $ids) {\n      error\n      conversation {\n        id\n        readState {\n          lastReadMessage {\n            id\n            __typename\n          }\n          markedAsUnread\n          unreadMessageCount\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"}
+        req = requests.post('https://api-de.knuddels.de/api-gateway/graphql', data=json.dumps(params), headers=headers)
+        req.raise_for_status()

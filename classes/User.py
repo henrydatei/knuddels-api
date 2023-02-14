@@ -1,5 +1,5 @@
 import dataclasses
-from typing import List
+from typing import List, Optional
 
 from .ProfilePicture import ProfilePicture
 
@@ -16,7 +16,7 @@ class User:
     relationshipStatus: str = dataclasses.field(init = False, default = None)
     canReceiveMessages: bool = dataclasses.field(init = False, default = None)
     albumPhotosUrl: str = dataclasses.field(init = False, default = None)
-    readMe: str = dataclasses.field(init = False, default = None)
+    readMe: Optional[str]
     name: str = dataclasses.field(init = False, default = None)
     dateOfBirth: str = dataclasses.field(init = False, default = None)
     country: str = dataclasses.field(init = False, default = None)

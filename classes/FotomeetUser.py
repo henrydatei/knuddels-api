@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Optional
 
 from .UserInfo import UserInfo
 
@@ -8,7 +9,7 @@ class FotomeetUser:
     gender: str
     id: str
     isPotentialMatch: bool
-    userInfo: UserInfo
+    userInfo: Optional[UserInfo]
     imageUrl: str
     isReportable: bool
     hasAlbumPhotos: bool
