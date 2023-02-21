@@ -6,5 +6,5 @@ from .ChannelBackgroundImageInfo import ChannelBackgroundImageInfo
 @dataclasses.dataclass
 class ChannelGroupInfo:
     backgroundColor: Color
-    backgroundImageInfo: ChannelBackgroundImageInfo
-    highlightColor: Color
+    backgroundImageInfo: ChannelBackgroundImageInfo = dataclasses.field(init = False, default = None)
+    highlightColor: Color = dataclasses.field(init = False, default = None)

@@ -8,5 +8,6 @@ from .User import User
 class Channel:
     id: str
     name: str
-    groupInfo: ChannelGroupInfo
-    users: List[User]
+    groupInfo: ChannelGroupInfo = dataclasses.field(init = False, default = None)
+    users: List[User] = dataclasses.field(init = False, default = None)
+    onlineUserCount: int = dataclasses.field(init = False, default = None)

@@ -2,11 +2,13 @@ import dataclasses
 from typing import List, Optional
 
 from .ProfilePicture import ProfilePicture
+from .AlbumPhoto import AlbumPhoto
+from .Album import Album
 
 @dataclasses.dataclass
 class User:
-    id: str
-    nick: str
+    id: str = dataclasses.field(init = False, default = None)
+    nick: str = dataclasses.field(init = False, default = None)
     gender: str = dataclasses.field(init = False, default = None)
     age: int = dataclasses.field(init = False, default = None)
     city: str = dataclasses.field(init = False, default = None)
@@ -47,3 +49,9 @@ class User:
     canSendImages: bool = dataclasses.field(init = False, default = None)
     ignoreState: str = dataclasses.field(init = False, default = None)
     isIgnoring: bool = dataclasses.field(init = False, default = None)
+    albumPhotos: List[AlbumPhoto] = dataclasses.field(init = False, default = None)
+    albums: List[Album] = dataclasses.field(init = False, default = None)
+    albumProfilePhoto: AlbumPhoto = dataclasses.field(init = False, default = None)
+    isAppBot: bool = dataclasses.field(init = False, default = None)
+    menteeStatus: str = dataclasses.field(init = False, default = None)
+    authenticityClassification: str = dataclasses.field(init = False, default = None)

@@ -1,20 +1,18 @@
 from knuddelsAPI import *
 from functions import *
-from classes import *
-import json
 
-username = "yourUsername"
-password = "yourPassword"
+from knuddelsAPI2 import KnuddelsAPI
+
+username = "cute mia2000w"
+password = "qwertzuiop"
+#username = "lea16w"
+#password = "qwertzpoiuz"
 sessionToken = login(username,password)
-# print(sessionToken)
-persons = getPersons(sessionToken)
-# print(getConversation(sessionToken, "276232853228727893"))
-print(len(persons))
-for person in persons:
-    messages = getAllMessagesPerConversation(sessionToken, person.conversationID)
-    print(person.id + " - " + person.nick + " - " + str(len(messages)) + " Nachrichten")
+userid = "0" # James
+conversationID = "287577631384732034" # with DonJon23m
+albumPhotoID = "derwahremugel-pro0vl0p"
+channelID = "1985598:1"
+#print(MessengerMarkConversationAsRead(sessionToken, conversationID))
 
-# messages = getAllMessagesPerConversation(sessionToken, "261426327137922645")
-# for message in messages:
-#     print(message.senderID + " - " + message.formattedText.text)
-# print(len(messages))
+api = KnuddelsAPI(username, password)
+print(api.sendMessageInChannel(channelID, "hi zusammen!"))
