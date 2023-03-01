@@ -20,21 +20,21 @@ class User:
     albumPhotosUrl: str = dataclasses.field(init = False, default = None)
     readMe: Optional[str]
     name: str = dataclasses.field(init = False, default = None)
-    dateOfBirth: str = dataclasses.field(init = False, default = None)
+    dateOfBirth: Optional[str]
     country: str = dataclasses.field(init = False, default = None)
-    smoker: str = dataclasses.field(init = False, default = None)
+    smoker: Optional[str]
     hobbies: List[str] = dataclasses.field(init = False, default = None)
     music: List[str] = dataclasses.field(init = False, default = None)
     movies: List[str] = dataclasses.field(init = False, default = None)
     series: List[str] = dataclasses.field(init = False, default = None)
     books: List[str] = dataclasses.field(init = False, default = None)
     languages: List[str] = dataclasses.field(init = False, default = None)
-    lastOnlineTime: str = dataclasses.field(init = False, default = None)
-    dateOfRegistration: str = dataclasses.field(init = False, default = None)
-    status: str = dataclasses.field(init = False, default = None)
+    lastOnlineTime: Optional[str]
+    dateOfRegistration: Optional[str]
+    status: Optional[str]
     supportsKnuddelsPhilosophy: bool = dataclasses.field(init = False, default = None)
     stammiMonths: int = dataclasses.field(init = False, default = None)
-    latestOnlineChannelName: str = dataclasses.field(init = False, default = None)
+    latestOnlineChannelName: Optional[str]
     myChannelName: str = dataclasses.field(init = False, default = None)
     moderatedChannelName: str = dataclasses.field(init = False, default = None)
     hickeys: int = dataclasses.field(init = False, default = None)
