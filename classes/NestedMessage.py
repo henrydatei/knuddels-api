@@ -10,4 +10,4 @@ class NestedMessage:
     formattedText: str
     timestamp: str
     type: str
-    image: Optional[str]
+    image: Optional[dict]
