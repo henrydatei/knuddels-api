@@ -18,4 +18,4 @@ Create an `.env` file with the following content:
 KNUDDELS_USERNAME="username"
 KNUDDELS_PASSWORD="password"
 ```
-and run `count_messages.py`. It will count which how many people you exchanged how many messages.
+and run `count_messages.py`. It will count with how many people you exchanged how many messages.
