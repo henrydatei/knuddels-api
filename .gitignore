@@ -123,6 +123,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 chats/.DS_Store
-chats/
+chats*/
 chats-all
 .DS_Store
+
+profilepictures/
