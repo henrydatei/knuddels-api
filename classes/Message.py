@@ -16,4 +16,4 @@ class Message:
     timestamp: str = dataclasses.field(init = False, default = None)
     image: Optional[UserSentImage] # TODO: Check if this is correct
     snap: Optional[UserSentImage] # TODO: Check if this is correct
-    content: Optional[ConversationSnapMessageContent]
+    # content: Optional[ConversationSnapMessageContent]

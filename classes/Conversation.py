@@ -11,4 +11,4 @@ class Conversation:
     isArchived: bool = dataclasses.field(init = False, default = None)
     otherParticipants: List[User] = dataclasses.field(init = False, default = None)
     readState: ReadState = dataclasses.field(init = False, default = None)
-    latestMessage: Message = dataclasses.field(init = False, default = None)
+    latestConversationMessage: Message = dataclasses.field(init = False, default = None)
