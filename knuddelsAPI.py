@@ -1,10 +1,11 @@
 import dataclasses
 import json
 import requests
-from dacite import from_dict
-from typing import List, Tuple, Literal, Optional
+from dacite import from_dict, Config
+from typing import List, Tuple, Literal, Optional, Any
 
 from classes.ClientSettings import ClientSettings
+from classes.MessageContent import MessageContent, ConversationVisiblePhotoCommentMessageContent, ConversationTextMessageContent, ConversationSnapMessageContent, ConversationImageMessageContent, ConversationKnuddelTransferMessageContent, ConversationQuotedMessageContent, ConversationHiddenPhotoCommentMessageContent
 from classes.User import User
 from classes.FotomeetMatch import FotomeetMatch
 from classes.FotomeetStatus import FotomeetStatus
@@ -20,6 +21,8 @@ from classes.ContactFilterSettings import ContactFilterSettings
 from classes.ContactFilterSettingsConstraints import ContactFilterSettingsConstraints
 from classes.AlbumPhotoComment import AlbumPhotoComment
 from classes.ComplaintReason import ComplaintReason
+from classes.UserSentImage import UserSentImage
+from classes.UserSentSnap import UserSentSnap
 
 @dataclasses.dataclass
 class KnuddelsAPI:
@@ -27,8 +30,46 @@ class KnuddelsAPI:
     password: str
     sessionToken: str = dataclasses.field(init = False)
 
+    base_config: Config = dataclasses.field(init=False)
+
+    def parse_message_content(self, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+            
+        typename = data.get("__typename")
+        mapping = {
+            "ConversationVisiblePhotoCommentMessageContent": ConversationVisiblePhotoCommentMessageContent,
+            "ConversationTextMessageContent": ConversationTextMessageContent,
+            "ConversationSnapMessageContent": ConversationSnapMessageContent,
+            "ConversationImageMessageContent": ConversationImageMessageContent,
+            "ConversationKnuddelTransferMessageContent": ConversationKnuddelTransferMessageContent,
+            "ConversationQuotedMessageContent": ConversationQuotedMessageContent,
+            "ConversationHiddenPhotoCommentMessageContent": ConversationHiddenPhotoCommentMessageContent
+        }
+        
+        target_class = mapping.get(typename)
+        
+        if target_class and not isinstance(target_class, str):
+            try:
+                return from_dict(data_class=target_class, data=data, config=self.base_config)
+            except Exception as e:
+                print(f"!!! Error parsing {typename}: {e}")
+                return None
+        else:
+            print("-" * 50)
+            print(f"Unknown type: {typename}")
+            print(f"JSON-DATA: {json.dumps(data, indent=2)}")
+            print("-" * 50)
+            return None
     def __post_init__(self) -> None:
         self.sessionToken = self.login(self.username, self.password)
+        self.base_config = Config(
+            type_hooks={
+                MessageContent: self.parse_message_content,
+                UserSentSnap: lambda data: from_dict(data_class=UserSentSnap, data=data, config=self.base_config),
+                UserSentImage: lambda data: from_dict(data_class=UserSentImage, data=data, config=self.base_config),
+            }
+        )
 
     def logincheck(self, username: str, password: str) -> str:
         req = requests.post('https://www.knuddels.de/logincheck.html', data={"nick": username, "pwd": password, "resultAsJSON": "true"})
@@ -190,7 +231,7 @@ class KnuddelsAPI:
         params = {"operationName": "MessengerOverview", "variables": {"limit": 50,"before": beforeTimestamp, "pixelDensity": 3}, "query": "query MessengerOverview($limit: Int = 20, $before: UtcTimestamp = null, $pixelDensity: Float!, $filterByState: MessengerConversationState = ALL) {\n  messenger {\n    conversations(limit: $limit, before: $before, filterByState: $filterByState) {\n      conversations {\n        ...FullConversationWithoutMessages\n        __typename\n      }\n      hasMore\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment FullConversationWithoutMessages on MessengerConversation {\n  id\n  visibility\n  otherParticipants {\n    ...MessengerOverviewUser\n    __typename\n  }\n  readState {\n    markedAsUnread\n    unreadMessageCount\n    lastReadConversationMessage {\n      id\n      __typename\n    }\n    __typename\n  }\n  latestConversationMessage {\n    ...ConversationMessage\n    __typename\n  }\n  __typename\n}\n\nfragment MessengerOverviewUser on User {\n  ...MessengerBasicUser\n  age\n  albumPhotosUrl\n  canReceiveMessages\n  city\n  distance\n  gender\n  id\n  isOnline\n  currentOnlineChannelName\n  latestOnlineChannelName\n  lastOnlineTime\n  nick\n  profilePicture {\n    urlCustomSizeSquare(pixelDensity: $pixelDensity, size: 60)\n    __typename\n  }\n  profilePictureOverlayUrls {\n    ...ProfilePictureOverlays\n    __typename\n  }\n  readMe\n  relationshipStatus\n  sexualOrientation\n  onlineMinutes\n  isLockedByAutomaticComplaint\n  automaticComplaintCommand\n  isReportable\n  interest\n  latestClient\n  authenticityClassification\n  ignoreState\n  __typename\n}\n\nfragment MessengerBasicUser on User {\n  id\n  nick\n  isOnline\n  canSendImages\n  menteeStatus\n  isAppBot\n  __typename\n}\n\nfragment ProfilePictureOverlays on ProfilePictureOverlays {\n  urlsLarge\n  urlsSmall\n  __typename\n}\n\nfragment ConversationMessage on ConversationMessage {\n  id\n  timestamp\n  sender {\n    ...MessengerBasicUser\n    __typename\n  }\n  content {\n    ...ConversationMessageContent\n    __typename\n  }\n  __typename\n}\n\nfragment ConversationMessageContent on ConversationMessageContent {\n  ... on ConversationTextMessageContent {\n    ...ConversationTextMessageContent\n    __typename\n  }\n  ... on ConversationQuotedMessageContent {\n    ...ConversationQuotedMessageContent\n    __typename\n  }\n  ... on ConversationForwardedMessageContent {\n    ...ConversationForwardedMessageContent\n    __typename\n  }\n  ... on ConversationImageMessageContent {\n    ...ConversationImageMessageContent\n    __typename\n  }\n  ... on ConversationSnapMessageContent {\n    ...ConversationSnapMessageContent\n    __typename\n  }\n  ... on ConversationVisiblePhotoCommentMessageContent {\n    ...ConversationVisiblePhotoCommentMessageContent\n    __typename\n  }\n  ... on ConversationHiddenPhotoCommentMessageContent {\n    ...ConversationHiddenPhotoCommentMessageContent\n    __typename\n  }\n  ... on ConversationDeletedPhotoCommentMessageContent {\n    ...ConversationDeletedPhotoCommentMessageContent\n    __typename\n  }\n  ... on ConversationKnuddelTransferMessageContent {\n    ...ConversationKnuddelTransferMessageContent\n    __typename\n  }\n  ... on ConversationMentorAchievedMessageContent {\n    ...ConversationMentorAchievedMessageContent\n    __typename\n  }\n  ... on ConversationPrivateSystemMessageContent {\n    ...ConversationPrivateSystemMessageContent\n    __typename\n  }\n  ... on ConversationBirthdayMessageContent {\n    ...ConversationBirthdayMessageContent\n    __typename\n  }\n  ... on ConversationNicknameChangeMessageContent {\n    ...ConversationNicknameChangeMessageContent\n    __typename\n  }\n  __typename\n}\n\nfragment ConversationTextMessageContent on ConversationTextMessageContent {\n  formattedText\n  starred\n  __typename\n}\n\nfragment ConversationQuotedMessageContent on ConversationQuotedMessageContent {\n  starred\n  formattedText\n  nestedMessage {\n    ...ConversationNestedMessage\n    __typename\n  }\n  __typename\n}\n\nfragment ConversationNestedMessage on ConversationNestedMessage {\n  sender {\n    ...MessengerBasicUser\n    __typename\n  }\n  timestamp\n  content {\n    ...ConversationNestedMessageContent\n    __typename\n  }\n  __typename\n}\n\nfragment ConversationNestedMessageContent on ConversationNestedMessageContent {\n  ... on ConversationTextMessageContent {\n    starred\n    formattedText\n    __typename\n  }\n  ... on ConversationImageMessageContent {\n    starred\n    image {\n      url\n      __typename\n    }\n    imageAccepted\n    sensitiveContentClassification\n    __typename\n  }\n  __typename\n}\n\nfragment ConversationForwardedMessageContent on ConversationForwardedMessageContent {\n  starred\n  nestedMessage {\n    ...ConversationNestedMessage\n    __typename\n  }\n  __typename\n}\n\nfragment ConversationImageMessageContent on ConversationImageMessageContent {\n  starred\n  image {\n    url\n    __typename\n  }\n  imageAccepted\n  sensitiveContentClassification\n  __typename\n}\n\nfragment ConversationSnapMessageContent on ConversationSnapMessageContent {\n  snap {\n    url\n    photoId\n    duration\n    decryptionKey\n    __typename\n  }\n  imageAccepted\n  sensitiveContentClassification\n  __typename\n}\n\nfragment ConversationVisiblePhotoCommentMessageContent on ConversationVisiblePhotoCommentMessageContent {\n  albumPhotoId\n  commentId\n  photoUrl\n  formattedText\n  __typename\n}\n\nfragment ConversationHiddenPhotoCommentMessageContent on ConversationHiddenPhotoCommentMessageContent {\n  albumPhotoId\n  photoUrl\n  formattedText\n  __typename\n}\n\nfragment ConversationDeletedPhotoCommentMessageContent on ConversationDeletedPhotoCommentMessageContent {\n  unused\n  __typename\n}\n\nfragment ConversationKnuddelTransferMessageContent on ConversationKnuddelTransferMessageContent {\n  knuddelAmount\n  __typename\n}\n\nfragment ConversationMentorAchievedMessageContent on ConversationMentorAchievedMessageContent {\n  unused\n  __typename\n}\n\nfragment ConversationPrivateSystemMessageContent on ConversationPrivateSystemMessageContent {\n  icon\n  formattedText\n  collapse\n  __typename\n}\n\nfragment ConversationBirthdayMessageContent on ConversationBirthdayMessageContent {\n  unused\n  __typename\n}\n\nfragment ConversationNicknameChangeMessageContent on ConversationNicknameChangeMessageContent {\n  oldNick\n  newNick\n  __typename\n}\n"}
         req = requests.post('https://api-de.knuddels.de/mono/graphql', data=json.dumps(params), headers=headers)
         req.raise_for_status()
-        conversations = [from_dict(data_class = Conversation, data = conversation) for conversation in req.json()['data']['messenger']['conversations']['conversations']]
+        conversations = [from_dict(data_class = Conversation, data = conversation, config = self.base_config) for conversation in req.json()['data']['messenger']['conversations']['conversations']]
 
         if req.json()['data']['messenger']['conversations']['hasMore']:
             conversations += self.getConversations(beforeTimestamp = conversations[0].latestConversationMessage.timestamp)
@@ -213,7 +254,7 @@ class KnuddelsAPI:
         req = requests.post('https://api-de.knuddels.de/mono/graphql', data=json.dumps(params), headers=headers)
         req.raise_for_status()
         
-        messages = [from_dict(data_class = Message, data = message) for message in req.json()['data']['messenger']['conversation']['conversationMessages']['messages']]
+        messages = [from_dict(data_class = Message, data = message, config = self.base_config) for message in req.json()['data']['messenger']['conversation']['conversationMessages']['messages']]
         
         if req.json()['data']['messenger']['conversation']['conversationMessages']['hasMore']:
             messages += self.getMessagesForConversation(conversationID, beforeMessageID = messages[0].id, messageCount = messageCount, recursionDepth = recursionDepth + 1)
